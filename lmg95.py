@@ -7,13 +7,16 @@
 #
 # 2012-07, Jan de Cuveland, Dirk Hutter
 
-import socket, telnetlib
+import socket, telnetlib, time
 
 EOS = "\r\n"
-TIMEOUT = 5
+TIMEOUT = 3
+ECHO = True
+DEBUG=False
 
 class scpi_socket:
     def __init__(self, host = "", port = 0):
+
         self._s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if port > 0:
             self.connect(host, port)
@@ -97,12 +100,87 @@ class scpi_telnet:
     def __del__(self):
         self.close()
 
+import serial
+class scpi_serial:
+    
+    def __init__(self,  port):
+        if type(port) == str:
+            self._device= port 
+            self.connect(port)
+            
 
-class lmg95(scpi_telnet):
+    def connect(self,  port):
+        self._s = serial.Serial(port, 115200, bytesize=8, parity='N', stopbits=1, rtscts=False)
+        self._s.timeout = TIMEOUT
+        
+    def close(self): 
+        print "c!"
+        self._s.close()
+
+    def flush(self):
+        self._s.reset_input_buffer()
+        self._s.reset_output_buffer()
+
+    def recv_str(self):
+        response=""
+        while response[-len(EOS):] != EOS:
+            r=self._s.read(1)
+            if len(r) < 1:
+                if DEBUG:
+                    print "R:",len(response),response,'\n',":".join("{:02x}".format(ord(c)) for c in response)
+                return response 
+            response = response + r 
+        if DEBUG:
+            print "r:",response.strip(), "\n", ":".join("{:02x}".format(ord(c)) for c in response)
+#        print "r:",len(response),response,":".join("{:02x}".format(ord(c)) for c in response)
+        return response[:-len(EOS)]
+
+    def send(self, msg):
+        if DEBUG:
+            print "w:", msg
+        self._s.write(msg + EOS)
+        if ECHO:
+            response=self._s.read(len(msg+EOS))
+            if DEBUG:
+                print "s: ",":".join("{:02x}".format(ord(c)) for c in response)
+
+    def send_raw(self, msg):
+        #self._s.get_socket().sendall(msg)
+        if DEBUG:
+            print "W:", msg
+        self._s.write(msg)
+        if ECHO:
+            response=self._s.read(len(msg+EOS))
+            if DEBUG:
+                print "S: ",":".join("{:02x}".format(ord(c)) for c in response)
+
+    def query(self, cmd): 
+        self.send(cmd) 
+        return self.recv_str()
+
+    def send_cmd(self, cmd):
+        result = self.query(cmd + ";*OPC?")
+        if result != "1":
+            print "opc returned unexpected value:", result
+
+    def send_brk(self):
+        self.send_raw(chr(255) + chr(243))
+
+    def get_socket(self):
+        return self._s
+
+    def __del__(self):
+        self.close()
+
+
+class lmg95(scpi_serial):
     _short_commands_enabled = False
 
     def reset(self):
+        self.flush()
+        time.sleep(1.0)
         self.send_brk()
+        time.sleep(1.0)
         self.send_cmd("*cls")
         self.send_cmd("*rst")
     
@@ -144,7 +222,7 @@ class lmg95(scpi_telnet):
         self.send("gtl")
 
     def read_id(self):
-        return self.query("*idn?").split(",")
+        return self.query("*idn?")
 
     def beep(self):
         self.send_short_cmd("beep")
