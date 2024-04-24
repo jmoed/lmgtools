@@ -9,7 +9,7 @@
 import argparse, sys, time, lmg95
 
 #VAL = "count sctc cycr utrms itrms udc idc ucf icf uff iff p pf freq".split()
-VAL = "count utrms itrms p pf".split()
+VAL = b"count utrms itrms p pf".split()
 
 
 def main():
@@ -45,7 +45,7 @@ def main():
     errors = lmg.read_errors()
 
         # set measuremnt interval
-    lmg.send_short_cmd("CYCL " + str(args.interval));
+    lmg.send_short_cmd(b"CYCL %d" % args.interval);
 
         # 60Hz low pass
     if args.lowpass == True:
@@ -59,7 +59,7 @@ def main():
     i = 0
     try:
         lmg.cont_on()
-        log.write("# time " + " ".join(VAL) + "\n")
+        log.write("# time " + b" ".join(VAL).decode('ascii') + "\n")
         print( "writing values to", args.logfile)
         print( "press CTRL-C to stop")
         while True:
