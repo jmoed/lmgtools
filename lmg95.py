@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # lmg95.py
 #
@@ -9,7 +9,7 @@
 
 import socket, telnetlib, time
 
-EOS = "\r\n"
+EOS = b"\r\n"
 TIMEOUT = 3
 ECHO = True
 DEBUG=False
@@ -34,14 +34,14 @@ class scpi_socket:
             try:
                 response += self._s.recv(4096)
             except socket.timeout as e:
-                print "error:", e
+                print( "error:", e)
                 return ""
         return response[:-len(EOS)]
 
     def send_cmd(self, cmd):
         result = self.query(cmd + ";*OPC?")
         if result != "1":
-            print "opc returned unexpected value:", result
+            print( "opc returned unexpected value:", result)
 
     def send_brk(self, ctrl):
         pass
@@ -73,7 +73,7 @@ class scpi_telnet:
     def recv_str(self):
         response = self._t.read_until(EOS, TIMEOUT)
         if response[-len(EOS):] != EOS:
-            print "error: recv timeout"
+            print( "error: recv timeout")
         return response[:-len(EOS)]
 
     def send(self, msg):
@@ -89,7 +89,7 @@ class scpi_telnet:
     def send_cmd(self, cmd):
         result = self.query(cmd + ";*OPC?")
         if result != "1":
-            print "opc returned unexpected value:", result
+            print( "opc returned unexpected value:", result)
 
     def send_brk(self):
         self.send_raw(chr(255) + chr(243))
@@ -114,7 +114,7 @@ class scpi_serial:
         self._s.timeout = TIMEOUT
         
     def close(self): 
-        print "c!"
+        print( "c!")
         self._s.close()
 
     def flush(self):
@@ -127,32 +127,32 @@ class scpi_serial:
             r=self._s.read(1)
             if len(r) < 1:
                 if DEBUG:
-                    print "R:",len(response),response,'\n',":".join("{:02x}".format(ord(c)) for c in response)
+                    print( "R:",len(response),response,'\n',":".join("{:02x}".format(ord(c)) for c in response))
                 return response 
             response = response + r 
         if DEBUG:
-            print "r:",response.strip(), "\n", ":".join("{:02x}".format(ord(c)) for c in response)
-#        print "r:",len(response),response,":".join("{:02x}".format(ord(c)) for c in response)
-        return response[:-len(EOS)]
+            print( "r:",response.strip(), "\n", ":".join("{:02x}".format(ord(c)) for c in response))
+#        print( "r:",len(response),response,":".join("{:02x}".format(ord(c)) for c in response))
+        return response[:-len(EOS)].decode('ascii')
 
     def send(self, msg):
         if DEBUG:
-            print "w:", msg
-        self._s.write(msg + EOS)
+            print( "w:", msg)
+        self._s.write(msg.encode('ascii') + EOS)
         if ECHO:
-            response=self._s.read(len(msg+EOS))
+            response=self._s.read(len(msg+EOS)).decode('ascii')
             if DEBUG:
-                print "s: ",":".join("{:02x}".format(ord(c)) for c in response)
+                print( "s: ",":".join("{:02x}".format(ord(c)) for c in response))
 
     def send_raw(self, msg):
         #self._s.get_socket().sendall(msg)
         if DEBUG:
-            print "W:", msg
-        self._s.write(msg)
+            print( "W:", msg)
+        self._s.write(msg.encode('ascii'))
         if ECHO:
-            response=self._s.read(len(msg+EOS))
+            response=self._s.read(len(msg+EOS)).decode('ascii')
             if DEBUG:
-                print "S: ",":".join("{:02x}".format(ord(c)) for c in response)
+                print( "S: ",":".join("{:02x}".format(ord(c)) for c in response))
 
     def query(self, cmd): 
         self.send(cmd) 
@@ -161,7 +161,7 @@ class scpi_serial:
     def send_cmd(self, cmd):
         result = self.query(cmd + ";*OPC?")
         if result != "1":
-            print "opc returned unexpected value:", result
+            print( "opc returned unexpected value:", result)
 
     def send_brk(self):
         self.send_raw(chr(255) + chr(243))

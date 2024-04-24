@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # powerlog95.py
 #
@@ -27,11 +27,11 @@ def main():
     parser.add_argument("-r", "--reset", dest="reset",action='store_true', help = "Reset LMG")
     args = parser.parse_args()
 
-    #print "connecting to", args.host, "at port", args.port
-    print "connecting at port", args.port
+    #print( "connecting to", args.host, "at port", args.port)
+    print( "connecting at port", args.port)
     lmg = lmg95.lmg95(args.port)
      
-    print "performing device reset"
+    print( "performing device reset")
     lmg.reset()
      
     if args.reset:
@@ -39,9 +39,9 @@ def main():
       return
 
 
-    print "device found:", lmg.read_id()
+    print( "device found:", lmg.read_id())
 
-    print "setting up device"
+    print( "setting up device")
     errors = lmg.read_errors()
 
         # set measuremnt interval
@@ -60,8 +60,8 @@ def main():
     try:
         lmg.cont_on()
         log.write("# time " + " ".join(VAL) + "\n")
-        print "writing values to", args.logfile
-        print "press CTRL-C to stop"
+        print( "writing values to", args.logfile)
+        print( "press CTRL-C to stop")
         while True:
             data = lmg.read_values()
             i += 1
@@ -74,13 +74,13 @@ def main():
             log.write(" ".join([ str(x) for x in data ]) + "\n")
             log.flush()
     except KeyboardInterrupt:
-        print
+        print()
      
     lmg.cont_off()
     log.close()
 
     lmg.disconnect()
-    print "done,", i, "measurements written"
+    print( "done,", i, "measurements written")
 
 
 if __name__ == "__main__":
